@@ -22,7 +22,7 @@ export const exportToExcel = (data: any[], filename: string) => {
     XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
-export const generateReceiptPDF = (payment: Payment, tenant: Tenant, ownerName: string) => {
+export const generateReceiptPDF = (payment: Payment, tenant: Tenant, ownerName: string, output: 'save' | 'file' = 'save'): string | File => {
     const doc = new jsPDF();
 
     doc.setFontSize(20);
@@ -30,7 +30,7 @@ export const generateReceiptPDF = (payment: Payment, tenant: Tenant, ownerName: 
 
     doc.setFontSize(12);
     doc.text(`Fecha: ${new Date(payment.date).toLocaleDateString()}`, 20, 40);
-    doc.text(`Recibo N°: ${payment.id.slice(0, 8)}`, 20, 50);
+    doc.text(`Recibo N°: ${payment.id.slice(0, 8).toUpperCase()}`, 20, 50);
 
     doc.text('De:', 20, 70);
     doc.setFont('helvetica', 'bold');
@@ -42,7 +42,7 @@ export const generateReceiptPDF = (payment: Payment, tenant: Tenant, ownerName: 
     doc.text(ownerName, 30, 80);
     doc.setFont('helvetica', 'normal');
 
-    doc.text(`Concepto: ${payment.concept} (${payment.monthYear})`, 20, 100);
+    doc.text(`Concepto: ${payment.concept}`, 20, 100);
 
     doc.setFontSize(16);
     doc.text(`Total: ${formatCurrency(payment.amount, 'ARS')}`, 150, 120, { align: 'right' });
@@ -50,5 +50,13 @@ export const generateReceiptPDF = (payment: Payment, tenant: Tenant, ownerName: 
     doc.setFontSize(10);
     doc.text('Gracias por su pago.', 105, 140, { align: 'center' });
 
-    doc.save(`Recibo_${tenant.fullName}_${payment.monthYear}.pdf`);
+    const filename = `Recibo_${tenant.fullName.replace(/\s+/g, '_')}_${payment.monthYear}.pdf`;
+
+    if (output === 'file') {
+        const pdfBlob = doc.output('blob');
+        return new File([pdfBlob], filename, { type: 'application/pdf' });
+    }
+
+    doc.save(filename);
+    return filename;
 };

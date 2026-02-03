@@ -1,6 +1,7 @@
 import { Tenant, Payment, PaymentStatus, OwnerProfile, FilterCriteria } from '../types';
 import ExportControls from './ExportControls';
 import AdvancedFilterPanel from './AdvancedFilterPanel';
+import { generateReceiptPDF } from '../utils/exportUtils';
 import React, { useState, useMemo } from 'react';
 import { CreditCard, Printer, FileText, Send, CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
@@ -93,6 +94,35 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShareReceipt = async (payment: Payment) => {
+    const tenant = tenants.find(t => t.id === payment.tenantId);
+    if (!tenant) return;
+
+    const pdfFile = generateReceiptPDF(payment, tenant, owner.name, 'file') as File;
+    const shareData = {
+      files: [pdfFile],
+      title: 'Recibo de Alquiler',
+      text: `Hola ${tenant.fullName}, aquí tienes tu recibo de alquiler de ${payment.monthYear}.`,
+    };
+
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+          alert('Hubo un error al intentar compartir el recibo.');
+        }
+      }
+    } else {
+      // Fallback for browsers that don't support file sharing
+      const message = `Hola ${tenant.fullName}, hemos registrado tu pago de ${owner.currency}${payment.amount.toLocaleString()}. Puedes ver tu recibo aquí: [Link temporal de prueba]`;
+      const url = `https://wa.me/${tenant.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
+      alert('Tu navegador no soporta compartir archivos directamente. Se ha enviado un mensaje de texto por WhatsApp como alternativa.');
+    }
   };
 
   return (
@@ -239,6 +269,12 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
                   className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700"
                 >
                   <Printer size={16} /> Imprimir
+                </button>
+                <button
+                  onClick={() => handleShareReceipt(selectedPaymentForReceipt)}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700"
+                >
+                  <Send size={16} /> Compartir WhatsApp
                 </button>
                 <button
                   onClick={() => setSelectedPaymentForReceipt(null)}
