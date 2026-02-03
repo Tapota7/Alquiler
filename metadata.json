@@ -1,0 +1,5 @@
+{
+  "name": "RentMaster - Rental Property Management",
+  "description": "A minimalist, mobile-friendly application for landlords to manage tenants, track payments, generate receipts, and send WhatsApp notifications.",
+  "requestFramePermissions": []
+}
