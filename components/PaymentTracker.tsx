@@ -1,7 +1,8 @@
-
+import { Tenant, Payment, PaymentStatus, OwnerProfile, FilterCriteria } from '../types';
+import ExportControls from './ExportControls';
+import AdvancedFilterPanel from './AdvancedFilterPanel';
 import React, { useState, useMemo } from 'react';
-import { CreditCard, Printer, FileText, Send, CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
-import { Tenant, Payment, PaymentStatus, OwnerProfile } from '../types';
+import { CreditCard, Printer, FileText, Send, CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface PaymentTrackerProps {
   tenants: Tenant[];
@@ -13,6 +14,7 @@ interface PaymentTrackerProps {
 const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUpdate, owner }) => {
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
   const monthYearStr = currentViewDate.toISOString().slice(0, 7);
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({});
 
   const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<Payment | null>(null);
 
@@ -21,13 +23,13 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
 
   // Matrix of tenants and their payment status for the current month
   const tableData = useMemo(() => {
-    return tenants.map(tenant => {
+    let data = tenants.map(tenant => {
       const payment = payments.find(p => p.tenantId === tenant.id && p.monthYear === monthYearStr);
-      
+
       const today = new Date();
       const currentMonthInt = currentViewDate.getMonth();
       const currentYearInt = currentViewDate.getFullYear();
-      
+
       const dueDate = new Date(currentYearInt, currentMonthInt, tenant.paymentDay);
       const isOverdue = !payment && today > dueDate;
 
@@ -37,7 +39,28 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
         isOverdue
       };
     });
-  }, [tenants, payments, monthYearStr, currentViewDate]);
+
+    // Apply Filters
+    if (Object.keys(filterCriteria).length > 0) {
+      data = data.filter(({ tenant, payment, isOverdue }) => {
+        // Status Filter
+        if (filterCriteria.status && filterCriteria.status.length > 0) {
+          const status = payment ? PaymentStatus.PAID : (isOverdue ? PaymentStatus.OVERDUE : PaymentStatus.PENDING);
+          if (!filterCriteria.status.includes(status)) return false;
+        }
+
+        // Amount Filter
+        if (filterCriteria.amountRange) {
+          const amount = payment ? payment.amount : tenant.monthlyRent;
+          if (amount < filterCriteria.amountRange.min || amount > filterCriteria.amountRange.max) return false;
+        }
+
+        return true;
+      });
+    }
+
+    return data;
+  }, [tenants, payments, monthYearStr, currentViewDate, filterCriteria]);
 
   const togglePayment = (tenant: Tenant, currentPayment?: Payment) => {
     if (currentPayment) {
@@ -63,7 +86,7 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
     const message = isOverdue
       ? `Hola ${tenant.fullName}, recordatorio de pago de renta de ${month} pendiente. Favor de realizar el pago de ${owner.currency}${tenant.monthlyRent}. ¡Gracias!`
       : `Hola ${tenant.fullName}, registro de pago de renta de ${month} recibido con éxito por un monto de ${owner.currency}${tenant.monthlyRent}. ¡Gracias!`;
-    
+
     const url = `https://wa.me/${tenant.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -76,58 +99,75 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Seguimiento de Pagos</h2>
-          <p className="text-slate-500">Controla quién ha pagado la renta este mes.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Seguimiento de Pagos</h2>
+          <p className="text-slate-500 dark:text-slate-400">Controla quién ha pagado la renta este mes.</p>
         </div>
-        
-        <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
-          <button onClick={prevMonth} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+
+        <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-1 shadow-sm">
+          <button onClick={prevMonth} className="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-600 dark:text-slate-300">
             <ChevronLeft size={20} />
           </button>
-          <span className="px-6 font-bold text-slate-700 capitalize">
+          <span className="px-6 font-bold text-slate-700 dark:text-white capitalize">
             {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentViewDate)}
           </span>
-          <button onClick={nextMonth} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+          <button onClick={nextMonth} className="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-600 dark:text-slate-300">
             <ChevronRight size={20} />
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+      <AdvancedFilterPanel
+        onFilterChange={setFilterCriteria}
+        onClear={() => setFilterCriteria({})}
+      />
+
+      <div className="flex justify-end bg-white/50 dark:bg-slate-800/50 p-2 rounded-xl">
+        <ExportControls
+          data={tableData.map(d => ({
+            Inquilino: d.tenant.fullName,
+            Monto: d.tenant.monthlyRent,
+            Estado: d.payment ? 'PAGADO' : d.isOverdue ? 'ATRASADO' : 'PENDIENTE',
+            FechaPago: d.payment ? new Date(d.payment.date).toLocaleDateString() : '-'
+          }))}
+          filename={`pagos-${monthYearStr}`}
+        />
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Inquilino / Propiedad</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Monto</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Fecha Pago</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Acciones</th>
+              <tr className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
+                <th className="px-6 py-4 text-xs font-semibold text-slate-400 dark:text-slate-300 uppercase tracking-wider">Inquilino / Propiedad</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-400 dark:text-slate-300 uppercase tracking-wider">Monto</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-400 dark:text-slate-300 uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-400 dark:text-slate-300 uppercase tracking-wider">Fecha Pago</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-400 dark:text-slate-300 uppercase tracking-wider text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
               {tableData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
-                    No hay inquilinos registrados para realizar cobros.
+                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400 dark:text-slate-500">
+                    No hay inquilinos registrados (o no coinciden con los filtros).
                   </td>
                 </tr>
               ) : (
                 tableData.map(({ tenant, payment, isOverdue }) => (
-                  <tr key={tenant.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={tenant.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold shrink-0">
                           {tenant.fullName.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 leading-none">{tenant.fullName}</p>
-                          <p className="text-xs text-slate-400 mt-1">{tenant.address}</p>
+                          <p className="font-bold text-slate-800 dark:text-white leading-none">{tenant.fullName}</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{tenant.address}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-semibold text-slate-700">{owner.currency}{tenant.monthlyRent.toLocaleString()}</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{owner.currency}{tenant.monthlyRent.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4">
                       {payment ? (
@@ -145,22 +185,22 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-slate-500">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
                         {payment ? new Date(payment.date).toLocaleDateString('es-ES') : '-'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => togglePayment(tenant, payment)}
                           className={`p-2 rounded-xl transition-all ${payment ? 'text-red-400 hover:bg-red-50' : 'text-emerald-500 hover:bg-emerald-50'}`}
                           title={payment ? "Anular pago" : "Registrar pago"}
                         >
                           {payment ? <X size={18} /> : <CreditCard size={18} />}
                         </button>
-                        
+
                         {payment && (
-                          <button 
+                          <button
                             onClick={() => setSelectedPaymentForReceipt(payment)}
                             className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl"
                             title="Ver Recibo"
@@ -168,8 +208,8 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
                             <Printer size={18} />
                           </button>
                         )}
-                        
-                        <button 
+
+                        <button
                           onClick={() => sendNotification(tenant, isOverdue)}
                           className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-xl"
                           title="Enviar Recordatorio WhatsApp"
@@ -194,21 +234,21 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({ tenants, payments, onUp
             <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between no-print">
               <h3 className="text-lg font-bold text-slate-800">Recibo de Alquiler</h3>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={handlePrint}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700"
                 >
                   <Printer size={16} /> Imprimir
                 </button>
-                <button 
-                  onClick={() => setSelectedPaymentForReceipt(null)} 
+                <button
+                  onClick={() => setSelectedPaymentForReceipt(null)}
                   className="p-2 text-slate-400 hover:bg-slate-100 rounded-xl"
                 >
                   <X size={20} />
                 </button>
               </div>
             </div>
-            
+
             <div className="p-8 md:p-12 overflow-y-auto receipt-content bg-white" id="receipt-printable">
               {/* Receipt Header */}
               <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">

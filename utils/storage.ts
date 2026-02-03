@@ -1,5 +1,5 @@
 
-import { Tenant, Payment, OwnerProfile } from '../types';
+import { Tenant, Payment, OwnerProfile, ReminderConfig } from '../types';
 
 const KEYS = {
   TENANTS: 'rentmaster_tenants',
@@ -36,6 +36,21 @@ export const getOwnerProfile = (): OwnerProfile => {
   };
 };
 
+
 export const saveOwnerProfile = (profile: OwnerProfile) => {
   localStorage.setItem(KEYS.OWNER, JSON.stringify(profile));
+};
+
+export const getReminderConfig = (): ReminderConfig => {
+  const data = localStorage.getItem('rentmaster_reminder_config');
+  return data ? JSON.parse(data) : {
+    enabled: false,
+    daysBeforeDue: 3,
+    autoSend: false,
+    messageTemplate: 'Hola {nombre}, recuerde que su pago vence el {fecha}. El monto es {monto}.'
+  };
+};
+
+export const saveReminderConfig = (config: ReminderConfig) => {
+  localStorage.setItem('rentmaster_reminder_config', JSON.stringify(config));
 };

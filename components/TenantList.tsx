@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, MoreVertical, Phone, Mail, MapPin, Calendar, Trash2, Edit2, UserPlus, X } from 'lucide-react';
 import { Tenant, OwnerProfile } from '../types';
+import ExportControls from './ExportControls';
 
 interface TenantListProps {
   tenants: Tenant[];
@@ -24,7 +25,7 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
     paymentDay: 5
   });
 
-  const filteredTenants = tenants.filter(t => 
+  const filteredTenants = tenants.filter(t =>
     t.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -74,15 +75,18 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Inquilinos</h2>
-          <p className="text-slate-500">Gestiona las personas que alquilan tus propiedades.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Inquilinos</h2>
+          <p className="text-slate-500 dark:text-slate-400">Gestiona las personas que alquilan tus propiedades.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-        >
-          <UserPlus size={20} /> Nuevo Inquilino
-        </button>
+        <div className="flex gap-2">
+          <ExportControls data={tenants} filename="inquilinos" />
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+          >
+            <UserPlus size={20} /> <span className="hidden sm:inline">Nuevo Inquilino</span>
+          </button>
+        </div>
       </div>
 
       <div className="relative">
@@ -92,7 +96,7 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
         <input
           type="text"
           placeholder="Buscar por nombre o dirección..."
-          className="block w-full pl-11 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
+          className="block w-full pl-11 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm text-slate-800 dark:text-white placeholder:text-slate-400"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -100,21 +104,21 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTenants.length === 0 ? (
-          <div className="col-span-full py-20 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300">
+          <div className="col-span-full py-20 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
             No se encontraron inquilinos.
           </div>
         ) : (
           filteredTenants.map((tenant) => (
-            <div key={tenant.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div key={tenant.id} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xl shadow-inner">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl shadow-inner dark:shadow-none">
                       {tenant.fullName.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-800 text-lg">{tenant.fullName}</h3>
-                      <div className="flex items-center gap-1 text-slate-400 text-xs">
+                      <h3 className="font-bold text-slate-800 dark:text-white text-lg">{tenant.fullName}</h3>
+                      <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs">
                         <Calendar size={12} /> Inicio: {new Date(tenant.startDate).toLocaleDateString('es-ES')}
                       </div>
                     </div>
@@ -130,33 +134,35 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <MapPin size={16} className="text-slate-400 flex-shrink-0" />
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                    <MapPin size={16} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                     <span className="text-sm truncate">{tenant.address}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <Phone size={16} className="text-slate-400 flex-shrink-0" />
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                    <Phone size={16} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                     <span className="text-sm">{tenant.phone}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <Mail size={16} className="text-slate-400 flex-shrink-0" />
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                    <Mail size={16} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
                     <span className="text-sm truncate">{tenant.email}</span>
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Renta Mensual</p>
-                    <p className="text-xl font-bold text-slate-800">{owner.currency}{tenant.monthlyRent.toLocaleString()}</p>
+                <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-700 block mt-auto">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Renta Mensual</p>
+                      <p className="text-xl font-bold text-slate-800 dark:text-white">{owner.currency}{tenant.monthlyRent.toLocaleString()}</p>
+                    </div>
+                    <a
+                      href={`https://wa.me/${tenant.phone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-3 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                    >
+                      <Phone size={20} />
+                    </a>
                   </div>
-                  <a 
-                    href={`https://wa.me/${tenant.phone.replace(/\D/g, '')}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="bg-emerald-50 text-emerald-600 p-3 rounded-2xl hover:bg-emerald-100 transition-colors"
-                  >
-                    <Phone size={20} />
-                  </a>
                 </div>
               </div>
             </div>
@@ -168,22 +174,22 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-800">{editingTenant ? 'Editar Inquilino' : 'Nuevo Inquilino'}</h3>
-              <button onClick={closeModal} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">{editingTenant ? 'Editar Inquilino' : 'Nuevo Inquilino'}</h3>
+              <button onClick={closeModal} className="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl">
                 <X size={24} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Nombre Completo</label>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Nombre Completo</label>
                 <input
                   required
                   type="text"
                   placeholder="Ej. Juan Pérez"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white placeholder:text-slate-400"
                   value={formData.fullName}
                   onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                 />
@@ -191,23 +197,23 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 ml-1">WhatsApp / Cel</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">WhatsApp / Cel</label>
                   <input
                     required
                     type="tel"
                     placeholder="123456789"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white placeholder:text-slate-400"
                     value={formData.phone}
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 ml-1">Email</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Email</label>
                   <input
                     required
                     type="email"
                     placeholder="juan@email.com"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white placeholder:text-slate-400"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -215,12 +221,12 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Dirección de Propiedad</label>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Dirección de Propiedad</label>
                 <input
                   required
                   type="text"
                   placeholder="Calle Falsa 123"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white placeholder:text-slate-400"
                   value={formData.address}
                   onChange={e => setFormData({ ...formData, address: e.target.value })}
                 />
@@ -228,23 +234,23 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 ml-1">Fecha de Inicio</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Fecha de Inicio</label>
                   <input
                     required
                     type="date"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white"
                     value={formData.startDate}
                     onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 ml-1">Día de Pago (Mensual)</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Día de Pago (Mensual)</label>
                   <input
                     required
                     type="number"
                     min="1"
                     max="31"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-800 dark:text-white"
                     value={formData.paymentDay}
                     onChange={e => setFormData({ ...formData, paymentDay: parseInt(e.target.value) })}
                   />
@@ -252,12 +258,12 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Renta Mensual ({owner.currency})</label>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Renta Mensual ({owner.currency})</label>
                 <input
                   required
                   type="number"
                   placeholder="0.00"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-indigo-600 text-xl"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-indigo-600 dark:text-indigo-400 text-xl placeholder:text-slate-400"
                   value={formData.monthlyRent}
                   onChange={e => setFormData({ ...formData, monthlyRent: parseFloat(e.target.value) })}
                 />
@@ -266,7 +272,7 @@ const TenantList: React.FC<TenantListProps> = ({ tenants, onUpdate, owner }) => 
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                 >
                   {editingTenant ? 'Guardar Cambios' : 'Crear Inquilino'}
                 </button>

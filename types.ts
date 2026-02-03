@@ -26,10 +26,35 @@ export interface Payment {
   concept: string;
 }
 
+
 export interface OwnerProfile {
   name: string;
   phone: string;
   email: string;
   address: string;
   currency: string;
+  theme?: 'light' | 'dark';
+}
+
+export interface ReminderConfig {
+  enabled: boolean;
+  daysBeforeDue: number;
+  messageTemplate: string;
+  autoSend: boolean;
+}
+
+export interface NotificationHistory {
+  id: string;
+  tenantId: string;
+  type: 'reminder' | 'payment_receipt' | 'custom';
+  message: string;
+  sentAt: string;
+  status: 'sent' | 'failed';
+}
+
+export interface FilterCriteria {
+  status?: PaymentStatus[];
+  dateRange?: { start: string; end: string };
+  amountRange?: { min: number; max: number };
+  searchQuery?: string;
 }
